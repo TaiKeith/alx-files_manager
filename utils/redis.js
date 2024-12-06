@@ -16,7 +16,7 @@ class RedisClient {
 
     // Event listeners
     this.client.on('error', (err) => {
-      console.error(`Redis client failed to connect: ${error}`);
+      console.error(`Redis client failed to connect: ${err}`);
       this.isClientConnected = false;
     });
 
