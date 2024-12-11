@@ -1,45 +1,38 @@
-import dbClient from '../utils/db'; // MongoDB client.
-import crypto from 'crypto'; // For SHA-1 hashing.
+import dbClient from '../utils/db'; // Import the database client for MongoDB interactions.
+import crypto from 'crypto'; // Import crypto for hashing passwords.
 import redisClient from '../utils/redis';
 import { ObjectId } from 'mongodb';
 
+
 class UsersController {
   static async postNew(req, res) {
-    const { email, password } = req.body;
+    const { email, password } = req.body; // Extract email and password from the request body.
 
     // Step 1: Validate input
     if (!email) {
-      return res.status(400).json({ error: 'Missing email' });
+      return res.status(400).json({ error: 'Missing email' }); // Email is required.
     }
     if (!password) {
-      return res.status(400).json({ error: 'Missing password' });
+      return res.status(400).json({ error: 'Missing password' }); // Password is required.
     }
 
     // Step 2: Check if the email already exists
-    const userCollection = dbClient.db.collection('users');
+    const userCollection = dbClient.db.collection('users'); // Access the 'users' collection in MongoDB.
     const userExists = await userCollection.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ error: 'Already exist' });
+      return res.status(400).json({ error: 'Already exist' }); // Email must be unique.
     }
 
-    // Step 3: Create a salt and hash the password
-    const salt = crypto.randomBytes(16).toString('hex'); // Generate a 16-byte random salt.
-    const hashedPassword = crypto
-      .createHash('sha1')
-      .update(salt + password)
-      .digest('hex'); // Prepend the salt to the password before hashing.
+    // Step 3: Hash the password
+    const hashedPassword = crypto.createHash('sha1').update(password).digest('hex');
 
-    // Step 4: Store the salt and hash in the database
-    const newUser = {
-      email,
-      password: hashedPassword,
-      salt, // Save the salt to allow password verification later.
-    };
-    const result = await userCollection.insertOne(newUser);
+    // Step 4: Insert the new user into the database
+    const newUser = { email, password: hashedPassword }; // Create the user object.
+    const result = await userCollection.insertOne(newUser); // Insert the user into the database.
 
-    // Step 5: Return the created user (excluding the password and salt)
+    // Step 5: Return the created user (excluding the password)
     return res.status(201).json({
-      id: result.insertedId,
+      id: result.insertedId, // MongoDB auto-generated ID.
       email,
     });
   }
@@ -58,7 +51,7 @@ class UsersController {
     }
 
     try {
-      const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
+      const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) }); // Use ObjectId here
 
       if (!user) {
         return res.status(401).json({ error: 'Unauthorized' });
